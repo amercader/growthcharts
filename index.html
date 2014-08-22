@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+
+      body {
+        font: 10px sans-serif;
+      }
+
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .grid .tick {
+        stroke: #BFBFBF;
+        stroke-dasharray: 2,4;
+        stroke-opacity: 0.7;
+        shape-rendering: crispEdges;
+      }
+      .grid path {
+        stroke-width: 0;
+      }
+
+      .line {
+        fill: none;
+        stroke-width: 1.5px;
+      }
+
+      .line15 {
+        stroke: green;
+      }
+
+      .line50 {
+        stroke: steelblue;
+      }
+
+      .line85 {
+        stroke: red;
+      }
+
+
+    </style>
+  </head>
+  <body>
+    <script src="http://d3js.org/d3.v3.js"></script>
+    <script>
+
+    // Sizes and margins
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    // Scales and axes
+    var x = d3.scale.linear()
+        .range([0, width]);
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+    var xAccessor = function(d) { 
+      return x(d.Age) / 30.4375;
+    }
+
+    // SVG element
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Load data
+    d3.tsv("data/wfa_boys_p_exp.txt", function(error, data) {
+
+      // Data extent
+      x.domain(d3.extent(data, function(d) { 
+        return parseInt(d.Age) / 30.4375; 
+      }));
+
+      y.domain([0, d3.max(data, function(d) {
+        return parseInt(d.P999);
+      })]);
+
+      // Draw x axis
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis)
+        .append("text")
+          .attr("y", -6)
+          .attr("x", width)
+          .style("text-anchor", "end")
+          .text("Months");
+
+      // Draw y axis
+      var gy = svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+
+      // Draw y axis label
+      gy.append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("Weigth (Kg)");
+
+      // Constructor for the y grid lines
+      function make_y_axis() {
+        return d3.svg.axis()
+            .scale(y)
+            .orient("left")
+      }
+
+      // Draw y grid lines
+      svg.append("g")            
+          .attr("class", "grid")
+          .call(make_y_axis()
+              .tickSize(-width, 0, 0)
+              .tickFormat("")
+          )
+
+
+      function addSeries(p) {
+        // Draws the value line for percentile p
+
+        var id = "p" + p;
+        var lineClassName = "line" + p;
+        var lineLabel = "P" + p;
+        var line = d3.svg.line()
+            .x(xAccessor)
+            .y(function(d) { return y(d["P" + p]); });
+
+        // Draw values line
+        svg.append("path")
+            .attr("id", id)
+            .datum(data)
+            .attr("class", "line " + lineClassName)
+            .attr("d", line)
+
+        // Draw values label
+        svg.append("text")
+            .attr("dy", 10)
+          .append("textPath")
+            .attr("xlink:href","#" + id)
+            .attr("startOffset","100%")
+            .text(lineLabel)
+            .style("text-anchor", "end")
+      }
+
+      addSeries("15");
+      addSeries("50");
+      addSeries("85");
+
+    });
+
+    </script>
+  </body>
+</html>
